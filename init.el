@@ -74,15 +74,15 @@ This is opinionated and may partially override theme colours.")
 
     ("M-0"      . fixup-whitespace)
 
-    ("M-]"      . forward-paragraph)
-    ("M-["      . backward-paragraph)
+;;    ("M-]"      . forward-paragraph)
+;;    ("M-["      . backward-paragraph)
 
     ("M-o"      . other-window)
     ("C-c o"    . delete-other-windows)
     ("C-c 0"    . delete-window)
 
-    ("C-c ]"    . next-buffer)
-    ("C-c ["    . previous-buffer)
+   ("C-c ]"    . next-buffer)
+   ("C-c ["    . previous-buffer)
     ("C-c SPC"  . my/lean-switch-buffer-or-recent)
     ("C-c b"    . switch-to-buffer)
 
@@ -462,6 +462,43 @@ This is opinionated and may partially override theme colours.")
 (my/lean-apply-keybinds)
 
 (my/lean-msg "Loaded successfully.")
+
+;; ---------------------------------------------------------------------
+;; TTY clipboard / mouse (Ghostty, etc.)
+;; ---------------------------------------------------------------------
+
+(defun my/lean--tty-setup ()
+  "Robust TTY setup for xterm-style terminals (clipboard + mouse)."
+  (unless (display-graphic-p)
+    ;; 1) Force a known-good TERM. Don't try to be clever.
+    (setenv "TERM" "xterm-256color")
+
+    ;; 2) Tell Emacs up-front which xterm capabilities to assume.
+    ;;    This must happen BEFORE terminal init / xterm setup.
+    (setq xterm-extra-capabilities '(getSelection setSelection modifyOtherKeys))
+
+    ;; 3) Ensure terminal init runs with the TERM we just forced.
+    (tty-run-terminal-initialization (selected-frame) (getenv "TERM"))
+
+    ;; 4) Mouse support
+    (require 'xt-mouse)
+    (xterm-mouse-mode 1)
+    (mouse-wheel-mode 1)
+    (setq mouse-wheel-scroll-amount '(3 ((shift) . 6)))
+
+    ;; 5) Disable GUI-only pixel scrolling if it somehow got enabled
+    (when (bound-and-true-p pixel-scroll-precision-mode)
+      (pixel-scroll-precision-mode -1))))
+
+;; Run at the correct lifecycle point for TTY frames:
+(add-hook 'tty-setup-hook #'my/lean--tty-setup)
+
+;; Also run once immediately (covers some startup orders):
+(my/lean--tty-setup)
+
+
 (provide 'init-lean)
+
+
 
 ;;; init-lean.el ends here
